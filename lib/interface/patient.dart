@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:orthophonie/helper/database.dart';
+import 'package:orthophonie/ui_elements/addTest.dart';
 import 'package:orthophonie/ui_elements/add_patient.dart';
 import 'package:open_file/open_file.dart';
 
@@ -19,6 +20,7 @@ class _PatientState extends State<Patient> {
   final _bilan = [];
   int _selectedPatient = 0;
   bool _showPatientWindow = false;
+  bool _addTest = false;
 
   initDB() async {
     _patientList.clear();
@@ -328,7 +330,22 @@ class _PatientState extends State<Patient> {
   Widget addTest() {
     return FloatingActionButton(
       onPressed: () {
-        
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              content: Container(
+                color: Colors.white,
+                width: 900,
+                height: 500,
+                child: const AddTest(
+                  patient: 24,
+                  test: 1,
+                ),
+              ),
+            );
+          },
+        );
       },
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:orthophonie/interface/history.dart';
 import 'package:orthophonie/interface/patient.dart';
 
 void main() {
@@ -28,6 +29,7 @@ class _MyAppState extends State<MyApp> {
           });
         },
       ),
+      const History(),
     ];
   }
 
@@ -60,7 +62,15 @@ class _MyAppState extends State<MyApp> {
                     _selectedScreen = 1;
                   });
                 }),
-            menu(title: 'Tests', image: 'assets/Tests.png'),
+            menu(
+              title: 'Tests',
+              image: 'assets/Tests.png',
+              ontap: () {
+                setState(() {
+                  _selectedScreen = 2;
+                });
+              },
+            ),
             menu(title: 'Patiants', image: 'assets/Patients.png'),
           ],
         ),

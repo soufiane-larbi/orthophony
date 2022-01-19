@@ -13,7 +13,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late final _screens;
+  late List<Widget> _screens;
   int _selectedScreen = 0;
 
   @override
@@ -34,8 +34,8 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Material(
-        child: Container(
+      home: Scaffold(
+        body: Container(
           color: Colors.blue[100],
           height: double.infinity,
           width: double.infinity,

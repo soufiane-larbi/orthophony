@@ -1,9 +1,13 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:orthophonie/helper/database.dart';
+import 'package:orthophonie/ui_elements/add_patient.dart';
+import 'package:open_file/open_file.dart';
 
 class Patient extends StatefulWidget {
-  Patient({Key? key, this.onTap}) : super(key: key);
-  Function? onTap;
+  const Patient({Key? key, this.onTap}) : super(key: key);
+  final Function? onTap;
 
   @override
   _PatientState createState() => _PatientState();
@@ -12,14 +16,30 @@ class Patient extends StatefulWidget {
 class _PatientState extends State<Patient> {
   final ScrollController _scrollController = ScrollController();
   final _patientList = [];
+  final _bilan = [];
   int _selectedPatient = 0;
+  bool _showPatientWindow = false;
 
   initDB() async {
-    _patientList.addAll(
-      await getResult(
-        query: "select * from patient",
-      ),
+    _patientList.clear();
+    _bilan.clear();
+    var patient = await getResult(
+      query: "select * from patient",
     );
+    try {
+      _patientList.addAll(patient);
+      for (var p in _patientList) {
+        _bilan.add(
+          await getResult(
+            query: "select * from bilan where patientId = ${p['id']}",
+          ),
+        );
+      }
+    } catch (_) {
+      if (kDebugMode) {
+        print(patient);
+      }
+    }
     setState(() {});
   }
 
@@ -31,25 +51,105 @@ class _PatientState extends State<Patient> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      child: Column(
+    return Scaffold(
+      backgroundColor: Colors.grey[200],
+      floatingActionButton: addTest(),
+      body: Stack(
         children: [
-          Container(
-            width: double.infinity,
-            height: 60,
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: topBar(),
+          Column(
+            children: [
+              Container(
+                width: double.infinity,
+                height: 60,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: topBar(),
+              ),
+              Container(
+                width: double.infinity,
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                margin: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: const [
+                    Expanded(
+                      flex: 4,
+                      child: Text('Nom'),
+                    ),
+                    Expanded(
+                      flex: 4,
+                      child: Text('Prénom'),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text('Date De Naissance'),
+                    ),
+                    Expanded(
+                      flex: 6,
+                      child: Text('Bilan'),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Scrollbar(
+                    controller: _scrollController,
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      itemCount: _patientList.length,
+                      itemBuilder: (context, index) {
+                        return patientWidget(index);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 5),
+            ],
           ),
-          Expanded(
-            child: Scrollbar(
-              controller: _scrollController,
-              child: ListView.builder(
-                controller: _scrollController,
-                itemCount: _patientList.length,
-                itemBuilder: (context, index) {
-                  return patientWidget(index);
-                },
+          Visibility(
+            visible: _showPatientWindow,
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.white.withOpacity(0.6),
+              alignment: Alignment.center,
+              child: SizedBox(
+                height: 300,
+                width: 360,
+                child: AddPatient(
+                  onTap: () {
+                    setState(() {
+                      _showPatientWindow = false;
+                    });
+                  },
+                  onAdd: () {
+                    initDB();
+                  },
+                ),
               ),
             ),
           ),
@@ -117,6 +217,10 @@ class _PatientState extends State<Patient> {
                     ),
                   ),
                 ),
+                Expanded(
+                  flex: 6,
+                  child: SizedBox(height: 30, child: patientBilan(index)),
+                ),
               ],
             ),
             const Spacer(),
@@ -128,6 +232,39 @@ class _PatientState extends State<Patient> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget patientBilan(index) {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: _bilan[index].length,
+      itemBuilder: (_, i) {
+        return InkWell(
+          onTap: () async {
+            var result = await getResult(
+              query: "select * from bilan where patientId=${_patientList[index]['id']} and name ='${_bilan[index][i]['name']}' ",
+            );
+            File file = File(result[0]['name']);
+            await file.writeAsBytes(result[0]['bilan']);
+            OpenFile.open(result[0]['name']);
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            alignment: Alignment.center,
+            height: 30,
+            decoration: BoxDecoration(
+              color: index == _selectedPatient ? Colors.white : Colors.blue,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              _bilan[index][i]['name'],
+              style: const TextStyle(fontSize: 11),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -147,23 +284,63 @@ class _PatientState extends State<Patient> {
         const Spacer(),
         InkWell(
           onTap: () {
-            widget.onTap!();
+            setState(() {
+              _showPatientWindow = true;
+            });
           },
-          child: const Icon(
+          child: Icon(
             Icons.add,
-            color: Colors.grey,
+            color: Colors.green[400],
             size: 40,
           ),
         ),
         InkWell(
           onTap: () {},
-          child: const Icon(
+          child: Icon(
             Icons.edit,
-            color: Colors.grey,
+            color: Colors.blue[400],
+            size: 40,
+          ),
+        ),
+        InkWell(
+          onTap: () async {
+            final int id = _patientList[_selectedPatient]['id'];
+            if (_selectedPatient != -1) {
+              await getResult(query: "delete from patient where id = $id");
+              await initDB();
+              if (_selectedPatient > _patientList.length - 1) {
+                _selectedPatient = _patientList.length - 1;
+              }
+              getResult(query: "delete from bilan where patientId = $id");
+              getResult(query: "delete from patientTest where patientId = $id");
+            }
+          },
+          child: const Icon(
+            Icons.delete,
+            color: Colors.red,
             size: 40,
           ),
         ),
       ],
+    );
+  }
+
+  Widget addTest() {
+    return FloatingActionButton(
+      onPressed: () {
+        
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: const [
+          Icon(
+            Icons.add,
+            size: 25,
+          ),
+          Text('TEST'),
+        ],
+      ),
     );
   }
 }

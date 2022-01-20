@@ -3,13 +3,16 @@ import 'package:orthophonie/helper/database.dart';
 import 'dart:convert' as convert;
 
 class History extends StatefulWidget {
-  const History({Key? key}) : super(key: key);
+  const History({Key? key, this.onTap}) : super(key: key);
+  final Function? onTap;
 
   @override
   _HistoryState createState() => _HistoryState();
 }
 
 class _HistoryState extends State<History> {
+  final ScrollController _patientControler = ScrollController();
+  final ScrollController _testController = ScrollController();
   int _selectedRow = 0;
   final _history = [];
   final _answers = [];
@@ -25,10 +28,79 @@ class _HistoryState extends State<History> {
       backgroundColor: Colors.grey[200],
       body: Column(
         children: [
+          const SizedBox(
+            height: 6,
+          ),
+          topBar(),
+          const SizedBox(
+            height: 6,
+          ),
+          Container(
+            height: 45,
+            width: double.infinity,
+            margin: const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Row(
+                    children: const [
+                      Expanded(
+                        flex: 4,
+                        child: Text('Nom'),
+                      ),
+                      Expanded(
+                        flex: 4,
+                        child: Text('Prénom'),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text('Date Du Test'),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Row(
+                    children: const [
+                      SizedBox(
+                        width: 12,
+                      ),
+                      Expanded(
+                        child: Text('Question'),
+                      ),
+                      SizedBox(
+                        width: 6,
+                      ),
+                      SizedBox(
+                        width: 57,
+                        child: Text('Reponse'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              color: Colors.white,
+              margin: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+              ),
               child: FutureBuilder(
                 future: getResult(
                   query: '''Select patient.name,patient.prename,patientTest.date,patientTest.test,patientTest.catId from patientTest INNER JOIN patient on patient.id = patientTest.patientId''',
@@ -39,12 +111,16 @@ class _HistoryState extends State<History> {
                     return Row(
                       children: [
                         Expanded(
+                          flex: 5,
                           child: ListView.builder(
+                            controller: _patientControler,
                             itemCount: ((snapshot.data) as List<dynamic>).length,
                             itemBuilder: (_, index) {
                               return InkWell(
                                 onTap: () {
                                   setState(() {
+                                    _answers.clear();
+                                    _answers.addAll(convert.jsonDecode(_history[index]['test']));
                                     _selectedRow = index;
                                   });
                                 },
@@ -115,7 +191,9 @@ class _HistoryState extends State<History> {
                             },
                           ),
                         ),
+                        const SizedBox(width: 6),
                         Expanded(
+                          flex: 2,
                           child: Container(
                             width: double.infinity,
                             height: double.infinity,
@@ -125,14 +203,11 @@ class _HistoryState extends State<History> {
                                     select * from test where testCategory = ${_history[_selectedRow]['catId']}
                                     ''',
                               ),
-                              builder: (_, snapshot) {
-                                if (snapshot.hasData) {
-                                  var data = [];
-                                  data.addAll(snapshot.data as List<dynamic>);
-                                  _answers.clear();
-                                  _answers.addAll(convert.jsonDecode(_history[_selectedRow]['test']));
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData && snapshot.connectionState == ConnectionState.done) {
                                   return ListView.builder(
-                                    itemCount: data.length,
+                                    controller: _testController,
+                                    itemCount: (snapshot.data as List<dynamic>).length,
                                     itemBuilder: (_, index) {
                                       return Container(
                                         padding: const EdgeInsets.all(6),
@@ -140,7 +215,7 @@ class _HistoryState extends State<History> {
                                         child: Row(
                                           children: [
                                             Expanded(
-                                              child: Text(data[index]['question']),
+                                              child: Text((snapshot.data as List<dynamic>)[index]['question']),
                                             ),
                                             const SizedBox(
                                               width: 6,
@@ -148,13 +223,14 @@ class _HistoryState extends State<History> {
                                             Container(
                                               height: 7,
                                               width: 7,
-                                              margin: const EdgeInsets.symmetric(horizontal: 3),
                                               decoration: BoxDecoration(
                                                 color: Colors.black,
                                                 borderRadius: BorderRadius.circular(100),
                                               ),
                                             ),
-                                            Expanded(
+                                            Container(
+                                              width: 50,
+                                              padding: const EdgeInsets.symmetric(horizontal: 6),
                                               child: Text(_answers[index]),
                                             ),
                                           ],
@@ -168,16 +244,6 @@ class _HistoryState extends State<History> {
                               },
                             ),
                           ),
-                          // child: FutureBuilder(
-                          //   future: testResult(_selectedRow),
-                          //   builder: (_, snapshot) {
-                          //     if (snapshot.hasData) {
-                          //       return answerWidget(snapshot.hasData);
-                          //     } else {
-                          //       return Container();
-                          //     }
-                          //   },
-                          // ),
                         ),
                       ],
                     );
@@ -194,8 +260,29 @@ class _HistoryState extends State<History> {
               ),
             ),
           ),
+          const SizedBox(
+            height: 6,
+          ),
         ],
       ),
+    );
+  }
+
+  Widget topBar() {
+    return Row(
+      children: [
+        InkWell(
+          onTap: () {
+            widget.onTap!();
+          },
+          child: const Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.grey,
+            size: 40,
+          ),
+        ),
+        const Spacer(),
+      ],
     );
   }
 }

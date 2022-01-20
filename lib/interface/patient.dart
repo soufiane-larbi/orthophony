@@ -338,9 +338,9 @@ class _PatientState extends State<Patient> {
                 color: Colors.white,
                 width: 900,
                 height: 500,
-                child: const AddTest(
-                  patient: 24,
-                  test: 1,
+                child: AddTest(
+                  patient: _patientList[_selectedPatient]['id'],
+                  test: 2,
                 ),
               ),
             );

@@ -29,7 +29,13 @@ class _MyAppState extends State<MyApp> {
           });
         },
       ),
-      const History(),
+      History(
+        onTap: () {
+          setState(() {
+            _selectedScreen = 0;
+          });
+        },
+      ),
     ];
   }
 

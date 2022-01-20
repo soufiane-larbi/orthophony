@@ -14,6 +14,7 @@ class AddTest extends StatefulWidget {
 
 class _AddTestState extends State<AddTest> {
   final _patient = [], _test = [], _answers = [];
+  bool _isTorF = false;
 
   initDB() async {
     _patient.addAll(
@@ -26,6 +27,7 @@ class _AddTestState extends State<AddTest> {
         query: "select * from test where testCategory = ${widget.test}",
       ),
     );
+    if (_test[0]['TF'] == 1) _isTorF = true;
     for (int i = 0; i < _test.length; i++) {
       _answers.add('N/A');
     }
@@ -53,13 +55,15 @@ class _AddTestState extends State<AddTest> {
                     flex: 3,
                     child: Text(_test[index]['question']),
                   ),
-                  const Divider(),
-                  Expanded(
-                    flex: 1,
-                    child: AnswersList(
-                      onTap: (value) {
-                        _answers[index] = value;
-                      },
+                  Center(
+                    child: Expanded(
+                      flex: _isTorF ? 1 : 4,
+                      child: AnswersList(
+                        torF: _isTorF,
+                        onTap: (value) {
+                          _answers[index] = value;
+                        },
+                      ),
                     ),
                   ),
                 ],
@@ -115,8 +119,8 @@ class _AddTestState extends State<AddTest> {
                     int patientId = widget.patient;
                     var result = await getResult(
                       query: '''
-                      insert into patientTest (patientId,date,test) 
-                      values($patientId,'$date','$test')
+                      insert into patientTest (patientId,date,test,catId) 
+                      values($patientId,'$date','$test',${widget.test})
                       ''',
                     );
                     if (!result.toString().contains('Error')) {

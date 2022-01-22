@@ -8,9 +8,10 @@ import 'package:orthophonie/helper/database.dart';
 import 'package:orthophonie/helper/formater.dart';
 
 class AddPatient extends StatefulWidget {
-  const AddPatient({Key? key, this.onTap, this.onAdd}) : super(key: key);
+  const AddPatient({Key? key, this.onTap, this.onAdd, this.patient}) : super(key: key);
   final Function? onTap;
   final Function? onAdd;
+  final Map<dynamic, dynamic>? patient;
 
   @override
   _AddPatientState createState() => _AddPatientState();
@@ -23,9 +24,22 @@ class _AddPatientState extends State<AddPatient> {
   final TextEditingController _monthController = TextEditingController();
   final TextEditingController _dayController = TextEditingController();
   DateTime now = DateTime.now();
-
   final List<File> _bilan = [];
-  String _uploadedBilan = "";
+  bool _edit = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.patient != null) {
+      _edit = true;
+      _nameController.text = widget.patient!['name'] ?? '';
+      _prenameController.text = widget.patient!['prename'] ?? '';
+      _yearController.text = getDateYMD(date: widget.patient!['birth'])['year'] ?? '';
+      _monthController.text = getDateYMD(date: widget.patient!['birth'])['month'] ?? '';
+      _dayController.text = getDateYMD(date: widget.patient!['birth'])['day'] ?? '';
+      initDB();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -201,17 +215,50 @@ class _AddPatientState extends State<AddPatient> {
               const Spacer(),
               Container(
                 width: 220.5,
-                height: 30,
-                padding: const EdgeInsets.symmetric(horizontal: 6),
+                height: 90,
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                 alignment: Alignment.centerLeft,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  _uploadedBilan,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: GridView.builder(
+                  itemCount: _bilan.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 2.7,
+                  ),
+                  itemBuilder: (_, index) {
+                    return Container(
+                      margin: const EdgeInsets.all(1),
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 75,
+                            child: Text(
+                              _bilan[index].path.split('\\').last,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const Spacer(),
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _bilan.removeAt(index);
+                              });
+                            },
+                            child: const Icon(Icons.cancel_outlined, color: Colors.red),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(
@@ -221,9 +268,8 @@ class _AddPatientState extends State<AddPatient> {
                 onTap: () async {
                   FilePickerResult? result = await FilePicker.platform.pickFiles();
                   if (result != null) {
-                    _bilan.add(File(result.files.single.path!));
                     setState(() {
-                      _uploadedBilan += result.files.single.name + ', ';
+                      _bilan.add(File(result.files.single.path!));
                     });
                   }
                 },
@@ -254,35 +300,12 @@ class _AddPatientState extends State<AddPatient> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () async {
-                    var result = await insertRow(
-                      table: 'patient',
-                      values: {
-                        'name': _nameController.text,
-                        'prename': _prenameController.text,
-                        'birth': parseDate(day: _dayController.text, month: _monthController.text, year: _yearController.text),
-                      },
-                    );
-                    try {
-                      int patientId = result;
-                      for (File file in _bilan) {
-                        await insertBlob(
-                          id: patientId,
-                          bilan: file,
-                        );
-                      }
-                    } catch (e) {
-                      if (kDebugMode) {
-                        print(e.toString());
-                      }
-                    } finally {
-                      widget.onAdd!();
-                    }
+                  onPressed: () {
+                    editPatientDB();
                   },
-                  child: const Text(
-                    "Ajouter",
-                    //_operation == 0 ? "Mettre à jour" : "Ajouter",
-                    style: TextStyle(
+                  child: Text(
+                    _edit ? "Mettre à jour" : "Ajouter",
+                    style: const TextStyle(
                       color: Colors.blue,
                       fontSize: 18,
                     ),
@@ -294,5 +317,120 @@ class _AddPatientState extends State<AddPatient> {
         ],
       ),
     );
+  }
+
+  initDB() async {
+    var result = await getResult(
+      query: '''
+      select * from bilan where patientId = ${widget.patient!['id']}
+      ''',
+    );
+    for (var bilan in result) {
+      File file = File(bilan['name']);
+      await file.writeAsBytes(bilan['bilan']);
+      _bilan.add(file);
+    }
+    setState(() {});
+  }
+
+  Future<void> editPatientDB() async {
+    if (_nameController.text == '' || _prenameController.text == '') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.orange,
+          content: Text(
+            "Nom et Prénom doivent être renseignés.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+      return;
+    }
+    if (_yearController.text == '' || _monthController.text == '' || _dayController.text == '') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.orange,
+          content: Text(
+            "L'année, le mois et le jour doivent être renseignés.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+      return;
+    }
+    try {
+      if (_edit) {
+        await updateRows(
+          table: 'patient',
+          values: {
+            'name': _nameController.text,
+            'prename': _prenameController.text,
+            'birth': parseDate(day: _dayController.text, month: _monthController.text, year: _yearController.text),
+          },
+          where: "id = ?",
+          whereArgs: [widget.patient!['id']],
+        );
+        int patientId = widget.patient!['id'];
+        await getResult(
+          query: '''
+          delete from bilan where patientId = ${widget.patient!['id']}
+          ''',
+        );
+        for (File file in _bilan) {
+          await insertBlob(
+            id: patientId,
+            bilan: file,
+          );
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.green,
+            content: Text(
+              "Patient modifié avec succès.",
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+        widget.onTap!();
+      } else {
+        var result = await insertRow(
+          table: 'patient',
+          values: {
+            'name': _nameController.text,
+            'prename': _prenameController.text,
+            'birth': parseDate(day: _dayController.text, month: _monthController.text, year: _yearController.text),
+          },
+        );
+        int patientId = result;
+        for (File file in _bilan) {
+          await insertBlob(
+            id: patientId,
+            bilan: file,
+          );
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.green,
+            content: Text(
+              "Patient ajouté avec succès.",
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+      }
+      widget.onTap!();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            e.toString(),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    } finally {
+      widget.onAdd!();
+    }
   }
 }

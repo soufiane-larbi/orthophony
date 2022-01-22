@@ -21,7 +21,7 @@ class _AnswersListState extends State<AnswersList> {
         widget.onTap!(text);
       },
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 8, horizontal: widget.torF ? 8 : 16),
+        padding: EdgeInsets.symmetric(vertical: 8, horizontal: widget.torF ? 8 : 10),
         decoration: BoxDecoration(
           color: selected == index ? Colors.blue : Colors.white,
           borderRadius: BorderRadius.circular(5),
@@ -34,10 +34,10 @@ class _AnswersListState extends State<AnswersList> {
   List<Widget> answers() {
     List<Widget> list = [];
     if (widget.torF) {
-      list.add(option(index: 0, text: 'Oui'));
-      list.add(option(index: 1, text: 'Non'));
+      list.add(option(index: 0.0, text: 'Oui'));
+      list.add(option(index: 1.0, text: 'Non'));
     } else {
-      for (double i = 1; i < 4; i = i + 0.5) {
+      for (double i = 1; i <= 4; i = i + 0.5) {
         list.add(
           option(index: i, text: i.toString()),
         );

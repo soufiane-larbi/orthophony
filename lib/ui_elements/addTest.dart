@@ -5,9 +5,10 @@ import 'package:orthophonie/ui_elements/answers.dart';
 import 'dart:convert' as convert;
 
 class AddTest extends StatefulWidget {
-  const AddTest({Key? key, required this.patient, required this.test}) : super(key: key);
+  const AddTest({Key? key, required this.patient, required this.test, this.onTap}) : super(key: key);
   final int patient;
   final int test;
+  final Function? onTap;
   @override
   _AddTestState createState() => _AddTestState();
 }
@@ -55,15 +56,13 @@ class _AddTestState extends State<AddTest> {
                     flex: 3,
                     child: Text(_test[index]['question']),
                   ),
-                  Center(
-                    child: Expanded(
-                      flex: _isTorF ? 1 : 4,
-                      child: AnswersList(
-                        torF: _isTorF,
-                        onTap: (value) {
-                          _answers[index] = value;
-                        },
-                      ),
+                  Expanded(
+                    flex: _isTorF ? 1 : 4,
+                    child: AnswersList(
+                      torF: _isTorF,
+                      onTap: (value) {
+                        _answers[index] = value;
+                      },
                     ),
                   ),
                 ],
@@ -87,7 +86,7 @@ class _AddTestState extends State<AddTest> {
             children: [
               TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    widget.onTap!();
                   },
                   child: const Text(
                     "Annuler",
@@ -133,7 +132,7 @@ class _AddTestState extends State<AddTest> {
                           ),
                         ),
                       );
-                      Navigator.of(context).pop();
+                      widget.onTap!();
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(

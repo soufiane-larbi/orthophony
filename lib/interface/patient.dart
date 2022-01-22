@@ -16,17 +16,21 @@ class Patient extends StatefulWidget {
 
 class _PatientState extends State<Patient> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _editingController = TextEditingController();
   final _patientList = [];
   final _bilan = [];
   int _selectedPatient = 0;
   bool _showPatientWindow = false;
+  bool _isAddPatient = true;
   bool _addTest = false;
+  int _testId = 0;
 
-  initDB() async {
+  initDB({filter = ''}) async {
     _patientList.clear();
     _bilan.clear();
     var patient = await getResult(
-      query: "select * from patient",
+      query: "select * from patient $filter",
+      close: filter == '' ? true : false,
     );
     try {
       _patientList.addAll(patient);
@@ -34,6 +38,7 @@ class _PatientState extends State<Patient> {
         _bilan.add(
           await getResult(
             query: "select * from bilan where patientId = ${p['id']}",
+            close: filter == '' ? true : false,
           ),
         );
       }
@@ -49,6 +54,16 @@ class _PatientState extends State<Patient> {
   void initState() {
     super.initState();
     initDB();
+    _editingController.addListener(() async {
+      await initDB(
+        filter: '''
+                WHERE instr(lower(name ||' '|| prename) || ' '||
+                 birth,("${_editingController.text.toLowerCase()}"))
+                 OR  instr(lower(prename ||' '|| name)  || ' '||
+                  birth,("${_editingController.text.toLowerCase()}"))
+                ''',
+      );
+    });
   }
 
   @override
@@ -60,20 +75,7 @@ class _PatientState extends State<Patient> {
         children: [
           Column(
             children: [
-              Container(
-                width: double.infinity,
-                height: 60,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: topBar(),
-              ),
+              topBar(),
               Container(
                 width: double.infinity,
                 height: 40,
@@ -137,7 +139,7 @@ class _PatientState extends State<Patient> {
             child: Container(
               width: double.infinity,
               height: double.infinity,
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.black.withOpacity(0.5),
               alignment: Alignment.center,
               child: SizedBox(
                 height: 300,
@@ -148,9 +150,35 @@ class _PatientState extends State<Patient> {
                       _showPatientWindow = false;
                     });
                   },
+                  patient: _isAddPatient ? null : _patientList[_selectedPatient],
                   onAdd: () {
                     initDB();
                   },
+                ),
+              ),
+            ),
+          ),
+          Visibility(
+            visible: _addTest,
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.black.withOpacity(0.5),
+              alignment: Alignment.center,
+              child: Card(
+                child: Container(
+                  height: 500,
+                  width: 900,
+                  margin: const EdgeInsets.all(10),
+                  child: AddTest(
+                    patient: _patientList.isNotEmpty ? _patientList[_selectedPatient]['id'] : 0,
+                    test: _testId,
+                    onTap: () {
+                      setState(() {
+                        _addTest = false;
+                      });
+                    },
+                  ),
                 ),
               ),
             ),
@@ -240,7 +268,7 @@ class _PatientState extends State<Patient> {
   Widget patientBilan(index) {
     return ListView.builder(
       scrollDirection: Axis.horizontal,
-      itemCount: _bilan[index].length,
+      itemCount: _bilan.isNotEmpty ? _bilan[index].length : 0,
       itemBuilder: (_, i) {
         return InkWell(
           onTap: () async {
@@ -262,7 +290,7 @@ class _PatientState extends State<Patient> {
             ),
             child: Text(
               _bilan[index][i]['name'],
-              style: const TextStyle(fontSize: 11),
+              style: TextStyle(fontSize: 11, color: index == _selectedPatient ? Colors.black : Colors.white),
             ),
           ),
         );
@@ -271,56 +299,189 @@ class _PatientState extends State<Patient> {
   }
 
   Widget topBar() {
+    return Container(
+      width: double.infinity,
+      height: 60,
+      margin: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 5,
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: double.infinity,
+            width: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                widget.onTap!();
+              },
+              child: const Icon(
+                Icons.arrow_back_rounded,
+                color: Colors.grey,
+                size: 40,
+              ),
+            ),
+          ),
+          const SizedBox(
+            width: 5,
+          ),
+          Expanded(
+            child: Container(
+              height: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: search(),
+            ),
+          ),
+          const SizedBox(
+            width: 5,
+          ),
+          Container(
+            height: double.infinity,
+            width: 150,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _showPatientWindow = true;
+                      _isAddPatient = true;
+                    });
+                  },
+                  child: Icon(
+                    Icons.add,
+                    color: Colors.green[400],
+                    size: 40,
+                  ),
+                ),
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _showPatientWindow = true;
+                      _isAddPatient = false;
+                    });
+                  },
+                  child: Icon(
+                    Icons.edit,
+                    color: Colors.blue[400],
+                    size: 40,
+                  ),
+                ),
+                InkWell(
+                  onTap: () async {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          contentPadding: const EdgeInsets.all(15),
+                          content: Container(
+                            color: Colors.white,
+                            width: 250,
+                            height: 100,
+                            child: Column(
+                              children: [
+                                Text("Voulez-vous vraiment supprimer le patient ${_patientList[_selectedPatient]['name']} ${_patientList[_selectedPatient]['prename']}"),
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  child: Row(
+                                    children: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: const Text('Anuller'),
+                                      ),
+                                      const Spacer(),
+                                      TextButton(
+                                        onPressed: () async {
+                                          final int id = _patientList[_selectedPatient]['id'];
+                                          final name = _patientList[_selectedPatient]['name'];
+                                          final prename = _patientList[_selectedPatient]['prename'];
+                                          if (_selectedPatient != -1) {
+                                            await getResult(query: "delete from patient where id = $id");
+                                            await initDB();
+                                            if (_selectedPatient > _patientList.length - 1) {
+                                              _selectedPatient = _patientList.length - 1;
+                                            }
+                                            getResult(query: "delete from bilan where patientId = $id");
+                                            getResult(query: "delete from patientTest where patientId = $id");
+                                          }
+                                          Navigator.of(context).pop();
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              backgroundColor: Colors.green,
+                                              content: Text(
+                                                "Le patient $name $prename a été avec succès.",
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  child: const Icon(
+                    Icons.delete,
+                    color: Colors.red,
+                    size: 40,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget search() {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        InkWell(
-          onTap: () {
-            widget.onTap!();
-          },
-          child: const Icon(
-            Icons.arrow_back_rounded,
-            color: Colors.grey,
-            size: 40,
-          ),
-        ),
-        const Spacer(),
-        InkWell(
-          onTap: () {
-            setState(() {
-              _showPatientWindow = true;
-            });
-          },
-          child: Icon(
-            Icons.add,
-            color: Colors.green[400],
-            size: 40,
-          ),
-        ),
-        InkWell(
-          onTap: () {},
-          child: Icon(
-            Icons.edit,
-            color: Colors.blue[400],
-            size: 40,
+        Expanded(
+          child: TextField(
+            controller: _editingController,
+            style: const TextStyle(fontSize: 20),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              hintText: "Chercher",
+              hintStyle: TextStyle(fontSize: 20),
+            ),
           ),
         ),
         InkWell(
           onTap: () async {
-            final int id = _patientList[_selectedPatient]['id'];
-            if (_selectedPatient != -1) {
-              await getResult(query: "delete from patient where id = $id");
+            if (_editingController.text != '') {
               await initDB();
-              if (_selectedPatient > _patientList.length - 1) {
-                _selectedPatient = _patientList.length - 1;
-              }
-              getResult(query: "delete from bilan where patientId = $id");
-              getResult(query: "delete from patientTest where patientId = $id");
+              _editingController.text = '';
             }
           },
-          child: const Icon(
-            Icons.delete,
-            color: Colors.red,
-            size: 40,
+          child: Icon(
+            _editingController.text == '' ? Icons.search : Icons.cancel_outlined,
+            size: 35,
           ),
         ),
       ],
@@ -334,14 +495,44 @@ class _PatientState extends State<Patient> {
           context: context,
           builder: (context) {
             return AlertDialog(
+              contentPadding: const EdgeInsets.all(15),
               content: Container(
                 color: Colors.white,
-                width: 900,
-                height: 500,
-                child: AddTest(
-                  patient: _patientList[_selectedPatient]['id'],
-                  test: 2,
-                ),
+                width: 500,
+                height: 80,
+                child: FutureBuilder(
+                    future: getResult(
+                      query: "Select * from testCategory",
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return ListView.builder(
+                          itemCount: (snapshot.data as List<dynamic>).length,
+                          itemBuilder: (_, index) {
+                            return InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _testId = (snapshot.data as List<dynamic>)[index]['id'];
+                                  _addTest = !_addTest;
+                                });
+                                Navigator.of(context).pop();
+                              },
+                              child: Container(
+                                width: 500,
+                                height: 40,
+                                padding: const EdgeInsets.all(6),
+                                alignment: Alignment.centerLeft,
+                                child: Text("${index + 1}- " + (snapshot.data as List<dynamic>)[index]['name']),
+                              ),
+                            );
+                          },
+                        );
+                      } else {
+                        return const Center(
+                          child: Text("Chargement"),
+                        );
+                      }
+                    }),
               ),
             );
           },

@@ -1,26 +1,25 @@
 import 'dart:io';
-
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-String path = "C:\\Users\\Soufiane\\Documents\\Projects\\Orthophonie\\code\\.dart_tool\\sqflite_common_ffi\\databases\\database.sqlite3";
-
-Future<dynamic> getResult({query, close = true}) async {
+String path = File("database.sqlite3").absolute.path;
+var db;
+Future initDatabase() async {
   sqfliteFfiInit();
   var databaseFactory = databaseFactoryFfi;
-  var db = await databaseFactory.openDatabase(path);
+  db = await databaseFactory.openDatabase(path);
+}
+
+Future<dynamic> getResult({query, close = true}) async {
+  if (!db.isOpen) await initDatabase();
   try {
     return await db.rawQuery(query);
   } catch (e) {
     return 'Error: ' + e.toString();
-  } finally {
-    if (close) await db.close();
   }
 }
 
 Future<dynamic> insertRow({required table, required values}) async {
-  sqfliteFfiInit();
-  var databaseFactory = databaseFactoryFfi;
-  var db = await databaseFactory.openDatabase(path);
+  if (!db.isOpen) await initDatabase();
   try {
     return await db.insert(
       table,
@@ -28,15 +27,11 @@ Future<dynamic> insertRow({required table, required values}) async {
     );
   } catch (e) {
     return 'Error: ' + e.toString();
-  } finally {
-    await db.close();
   }
 }
 
 Future<dynamic> updateRows({required table, required values, whereArgs, where}) async {
-  sqfliteFfiInit();
-  var databaseFactory = databaseFactoryFfi;
-  var db = await databaseFactory.openDatabase(path);
+  if (!db.isOpen) await initDatabase();
   try {
     return await db.update(
       table,
@@ -46,15 +41,11 @@ Future<dynamic> updateRows({required table, required values, whereArgs, where}) 
     );
   } catch (e) {
     return 'Error: ' + e.toString();
-  } finally {
-    await db.close();
   }
 }
 
 Future<dynamic> insertBlob({required id, required File bilan}) async {
-  sqfliteFfiInit();
-  var databaseFactory = databaseFactoryFfi;
-  var db = await databaseFactory.openDatabase(path);
+  if (!db.isOpen) await initDatabase();
   try {
     return await db.insert(
       'bilan',
@@ -66,7 +57,5 @@ Future<dynamic> insertBlob({required id, required File bilan}) async {
     );
   } catch (e) {
     return 'Error: ' + e.toString();
-  } finally {
-    await db.close();
   }
 }

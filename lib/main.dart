@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:orthophonie/helper/database.dart';
 import 'package:orthophonie/interface/history.dart';
 import 'package:orthophonie/interface/patient.dart';
 
-void main() {
+void main() async {
+  await initDatabase();
   runApp(const MyApp());
 }
 
@@ -54,13 +56,12 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget mainScreen() {
-    return Column(
-      children: [
-        const Spacer(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            menu(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 110),
+      child: Row(
+        children: [
+          Expanded(
+            child: menu(
                 title: 'Patiants',
                 image: 'assets/Patients.png',
                 ontap: () {
@@ -68,8 +69,11 @@ class _MyAppState extends State<MyApp> {
                     _selectedScreen = 1;
                   });
                 }),
-            menu(
-              title: 'Tests',
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: menu(
+              title: 'Historique',
               image: 'assets/Tests.png',
               ontap: () {
                 setState(() {
@@ -77,20 +81,13 @@ class _MyAppState extends State<MyApp> {
                 });
               },
             ),
-            menu(title: 'Patiants', image: 'assets/Patients.png'),
-          ],
-        ),
-        const Spacer(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            menu(title: 'Patiants', image: 'assets/Patients.png'),
-            menu(title: 'Tests', image: 'assets/Tests.png'),
-            menu(title: 'Patiants', image: 'assets/Patients.png'),
-          ],
-        ),
-        const Spacer(),
-      ],
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: menu(title: 'Info', image: 'assets/About.png'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -98,29 +95,29 @@ class _MyAppState extends State<MyApp> {
     return InkWell(
       onTap: ontap,
       child: Container(
-        width: 270,
-        height: 200,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
           color: Colors.white,
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(
-              height: 100,
-              child: Image.asset(
-                image,
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                child: Image.asset(
+                  image,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
-            const SizedBox(
-              height: 20,
-            ),
-            Center(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
+            SizedBox(
+              height: 40,
+              child: Center(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                  ),
                 ),
               ),
             ),

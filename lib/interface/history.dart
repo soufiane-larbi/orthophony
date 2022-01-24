@@ -13,13 +13,40 @@ class History extends StatefulWidget {
 class _HistoryState extends State<History> {
   final ScrollController _patientControler = ScrollController();
   final ScrollController _testController = ScrollController();
+  final TextEditingController _editingController = TextEditingController();
+  String _filter = '';
   int _selectedRow = 0;
-  final _history = [];
+  //final _history = [];
   final _answers = [];
 
   @override
   void initState() {
     super.initState();
+    _editingController.addListener(() {
+      setState(() {
+        if (_editingController.text != '') {
+          _filter = '''
+        WHERE instr(lower(patient.name ||' '|| patient.prename),("${_editingController.text.toLowerCase()}"))
+                 OR  instr(lower(patient.prename ||' '|| patient.name),("${_editingController.text.toLowerCase()}"))
+        ''';
+        } else {
+          setState(() {
+            _filter = '';
+          });
+        }
+      });
+    });
+  }
+
+  Future<dynamic> initDB({filter = ''}) async {
+    setState(() {
+      _answers.clear();
+    });
+    return getResult(
+      query:
+          '''Select patient.name,patient.prename,patientTest.date,patientTest.test,patientTest.catId,testCategory.name as 'category' from patientTest INNER JOIN patient on patient.id = patientTest.patientId INNER JOIN testCategory on testCategory.id = patientTest.catId $filter''',
+          close:false,
+    );
   }
 
   @override
@@ -28,13 +55,7 @@ class _HistoryState extends State<History> {
       backgroundColor: Colors.grey[200],
       body: Column(
         children: [
-          const SizedBox(
-            height: 6,
-          ),
           topBar(),
-          const SizedBox(
-            height: 6,
-          ),
           Container(
             height: 45,
             width: double.infinity,
@@ -115,15 +136,12 @@ class _HistoryState extends State<History> {
                 ),
               ),
               child: FutureBuilder(
-                future: getResult(
-                  query:
-                      '''Select patient.name,patient.prename,patientTest.date,patientTest.test,patientTest.catId,testCategory.name as 'category' from patientTest INNER JOIN patient on patient.id = patientTest.patientId INNER JOIN testCategory on testCategory.id = patientTest.catId''',
-                ),
+                future: initDB(filter: _filter),
                 builder: (_, snapshot) {
                   if (snapshot.hasData) {
-                    _history.addAll((snapshot.data) as List<dynamic>);
-                    if (_history.isNotEmpty) _answers.addAll(convert.jsonDecode(_history[_selectedRow]['test']));
-                    if (_history.isEmpty) return Container();
+                    //_history.addAll((snapshot.data) as List<dynamic>);
+                    if (((snapshot.data) as List<dynamic>).isNotEmpty) _answers.addAll(convert.jsonDecode(((snapshot.data) as List<dynamic>)[_selectedRow]['test']));
+                    if (((snapshot.data) as List<dynamic>).isEmpty) return Container();
                     return Row(
                       children: [
                         Expanded(
@@ -138,7 +156,7 @@ class _HistoryState extends State<History> {
                                   onTap: () {
                                     setState(() {
                                       _answers.clear();
-                                      _answers.addAll(convert.jsonDecode(_history[index]['test']));
+                                      _answers.addAll(convert.jsonDecode(((snapshot.data) as List<dynamic>)[index]['test']));
                                       _selectedRow = index;
                                     });
                                   },
@@ -163,7 +181,7 @@ class _HistoryState extends State<History> {
                                             Expanded(
                                               flex: 3,
                                               child: Text(
-                                                _history[index]['name'],
+                                                ((snapshot.data) as List<dynamic>)[index]['name'],
                                                 style: TextStyle(
                                                   fontSize: _selectedRow == index ? 18 : 14,
                                                   fontWeight: _selectedRow == index ? FontWeight.w600 : FontWeight.normal,
@@ -174,7 +192,7 @@ class _HistoryState extends State<History> {
                                             Expanded(
                                               flex: 3,
                                               child: Text(
-                                                _history[index]['prename'],
+                                                ((snapshot.data) as List<dynamic>)[index]['prename'],
                                                 style: TextStyle(
                                                   fontSize: _selectedRow == index ? 18 : 14,
                                                   fontWeight: _selectedRow == index ? FontWeight.w600 : FontWeight.normal,
@@ -185,7 +203,7 @@ class _HistoryState extends State<History> {
                                             Expanded(
                                               flex: 2,
                                               child: Text(
-                                                _history[index]['date'],
+                                                ((snapshot.data) as List<dynamic>)[index]['date'],
                                                 style: TextStyle(
                                                   fontSize: _selectedRow == index ? 18 : 14,
                                                   fontWeight: _selectedRow == index ? FontWeight.w600 : FontWeight.normal,
@@ -196,7 +214,7 @@ class _HistoryState extends State<History> {
                                             Expanded(
                                               flex: 4,
                                               child: Text(
-                                                _history[index]['category'],
+                                                ((snapshot.data) as List<dynamic>)[index]['category'],
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: TextStyle(
@@ -209,7 +227,7 @@ class _HistoryState extends State<History> {
                                             Expanded(
                                               flex: 3,
                                               child: Text(
-                                                testResult(_history[index]['test']),
+                                                testResult(((snapshot.data) as List<dynamic>)[index]['test']),
                                                 style: TextStyle(
                                                   fontSize: _selectedRow == index ? 18 : 14,
                                                   fontWeight: _selectedRow == index ? FontWeight.w600 : FontWeight.normal,
@@ -242,7 +260,7 @@ class _HistoryState extends State<History> {
                             child: FutureBuilder(
                               future: getResult(
                                 query: '''
-                                    select * from test where testCategory = ${_history[_selectedRow]['catId']}
+                                    select * from test where testCategory = ${((snapshot.data) as List<dynamic>)[_selectedRow]['catId']}
                                     ''',
                               ),
                               builder: (context, snapshot) {
@@ -335,29 +353,79 @@ class _HistoryState extends State<History> {
 
   Widget topBar() {
     return Container(
-      height: 60,
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+      height: 60,
+      margin: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 5,
       ),
       child: Row(
         children: [
-          InkWell(
-            onTap: () {
-              widget.onTap!();
-            },
-            child: const Icon(
-              Icons.arrow_back_rounded,
-              color: Colors.grey,
-              size: 40,
+          Container(
+            height: double.infinity,
+            width: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                widget.onTap!();
+              },
+              child: const Icon(
+                Icons.arrow_back_rounded,
+                color: Colors.grey,
+                size: 40,
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(
+            width: 5,
+          ),
+          Expanded(
+            child: Container(
+              height: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: search(),
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget search() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _editingController,
+            style: const TextStyle(fontSize: 20),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              hintText: "Chercher",
+              hintStyle: TextStyle(fontSize: 20),
+            ),
+          ),
+        ),
+        InkWell(
+          onTap: () {
+            if (_editingController.text != '') {
+              _editingController.text = '';
+            }
+          },
+          child: Icon(
+            _editingController.text == '' ? Icons.search : Icons.cancel_outlined,
+            size: 35,
+          ),
+        ),
+      ],
     );
   }
 }

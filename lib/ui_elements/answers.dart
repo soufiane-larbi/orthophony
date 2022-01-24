@@ -9,7 +9,7 @@ class AnswersList extends StatefulWidget {
   _AnswersListState createState() => _AnswersListState();
 }
 
-class _AnswersListState extends State<AnswersList> {
+class _AnswersListState extends State<AnswersList> with AutomaticKeepAliveClientMixin {
   double selected = -1;
 
   Widget option({index, text}) {
@@ -49,9 +49,13 @@ class _AnswersListState extends State<AnswersList> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: answers(),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }

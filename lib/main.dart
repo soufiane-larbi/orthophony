@@ -5,7 +5,7 @@ import 'package:orthophonie/interface/patient.dart';
 
 void main() async {
   await initDatabase();
-  runApp(const MyApp());
+  runApp(const MaterialApp(home: MyApp()));
 }
 
 class MyApp extends StatefulWidget {
@@ -18,6 +18,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late List<Widget> _screens;
   int _selectedScreen = 0;
+
 
   @override
   void initState() {
@@ -43,21 +44,15 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Container(
-          color: Colors.blue[100],
-          height: double.infinity,
-          width: double.infinity,
-          child: _screens[_selectedScreen],
-        ),
-      ),
+    return Scaffold(
+      body: _screens[_selectedScreen],
     );
   }
 
   Widget mainScreen() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 110),
+    return Container(
+      color: Colors.blue[100],
+      padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 200),
       child: Row(
         children: [
           Expanded(
@@ -70,7 +65,7 @@ class _MyAppState extends State<MyApp> {
                   });
                 }),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 30),
           Expanded(
             child: menu(
               title: 'Historique',
@@ -82,9 +77,115 @@ class _MyAppState extends State<MyApp> {
               },
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 30),
           Expanded(
-            child: menu(title: 'Info', image: 'assets/About.png'),
+            child: menu(
+              title: 'Info',
+              image: 'assets/About.png',
+              ontap: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      contentPadding: const EdgeInsets.all(10),
+                      titlePadding: const EdgeInsets.only(
+                        top: 10,
+                        right: 10,
+                        left: 10,
+                      ),
+                      title: const Center(child: Text("Information")),
+                      content: Container(
+                        color: Colors.white,
+                        width: 300,
+                        height: 180,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
+                              children: const [
+                                SizedBox(
+                                  width: 20,
+                                  child: Icon(Icons.info_outlined),
+                                ),
+                                SizedBox(
+                                  width: 10,
+                                ),
+                                Text("Logiciel: ", style: TextStyle(fontWeight: FontWeight.bold)),
+                                Text("Orthophonie"),
+                              ],
+                            ),
+                            const SizedBox(
+                              height: 10,
+                            ),
+                            Row(
+                              children: const [
+                                SizedBox(
+                                  width: 20,
+                                  child: Icon(Icons.account_tree_rounded),
+                                ),
+                                SizedBox(
+                                  width: 10,
+                                ),
+                                Text("Version: ", style: TextStyle(fontWeight: FontWeight.bold)),
+                                Text("1.0.0+55"),
+                              ],
+                            ),
+                            const SizedBox(
+                              height: 10,
+                            ),
+                            Row(
+                              children: const [
+                                SizedBox(
+                                  width: 20,
+                                  child: Icon(Icons.phone),
+                                ),
+                                SizedBox(
+                                  width: 10,
+                                ),
+                                Text("Developpeur: ", style: TextStyle(fontWeight: FontWeight.bold)),
+                                Text("Soufiane Larbi Aloui"),
+                              ],
+                            ),
+                            const SizedBox(
+                              height: 10,
+                            ),
+                            Row(
+                              children: const [
+                                SizedBox(
+                                  width: 20,
+                                  child: Icon(Icons.account_circle_outlined),
+                                ),
+                                SizedBox(
+                                  width: 10,
+                                ),
+                                Text("Mobile: ", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SelectableText("0550 45 31 17"),
+                              ],
+                            ),
+                            const SizedBox(
+                              height: 10,
+                            ),
+                            Row(
+                              children: const [
+                                SizedBox(
+                                  width: 20,
+                                  child: Icon(Icons.email_outlined),
+                                ),
+                                SizedBox(
+                                  width: 10,
+                                ),
+                                Text("Email: ", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SelectableText("larbialoui.soufiane@gmail.com"),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),

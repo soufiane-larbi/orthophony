@@ -45,7 +45,7 @@ class _HistoryState extends State<History> {
     return getResult(
       query:
           '''Select patient.name,patient.prename,patientTest.date,patientTest.test,patientTest.catId,testCategory.name as 'category' from patientTest INNER JOIN patient on patient.id = patientTest.patientId INNER JOIN testCategory on testCategory.id = patientTest.catId $filter''',
-          close:false,
+      close: false,
     );
   }
 
@@ -226,12 +226,25 @@ class _HistoryState extends State<History> {
                                             ),
                                             Expanded(
                                               flex: 3,
-                                              child: Text(
-                                                testResult(((snapshot.data) as List<dynamic>)[index]['test']),
-                                                style: TextStyle(
-                                                  fontSize: _selectedRow == index ? 18 : 14,
-                                                  fontWeight: _selectedRow == index ? FontWeight.w600 : FontWeight.normal,
-                                                  color: _selectedRow == index ? Colors.white : Colors.black,
+                                              child: InkWell(
+                                                onTap: () {
+                                                  if (((snapshot.data) as List<dynamic>)[index]['category'].contains('CHAT')) {
+                                                    mChatDetails(
+                                                      patient: ((snapshot.data) as List<dynamic>)[index]['name'] + ' ' + ((snapshot.data) as List<dynamic>)[index]['prename'],
+                                                    );
+                                                  } else {
+                                                    childhoodDetails(
+                                                      patient: ((snapshot.data) as List<dynamic>)[index]['name'] + ' ' + ((snapshot.data) as List<dynamic>)[index]['prename'],
+                                                    );
+                                                  }
+                                                },
+                                                child: Text(
+                                                  testResult(((snapshot.data) as List<dynamic>)[index]['test']),
+                                                  style: TextStyle(
+                                                    fontSize: _selectedRow == index ? 18 : 14,
+                                                    fontWeight: _selectedRow == index ? FontWeight.w600 : FontWeight.normal,
+                                                    color: _selectedRow == index ? Colors.white : Colors.black,
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -254,7 +267,7 @@ class _HistoryState extends State<History> {
                         const SizedBox(width: 6),
                         Expanded(
                           flex: 2,
-                          child: Container(
+                          child: SizedBox(
                             width: double.infinity,
                             height: double.infinity,
                             child: FutureBuilder(
@@ -426,6 +439,104 @@ class _HistoryState extends State<History> {
           ),
         ),
       ],
+    );
+  }
+
+  mChatDetails({patient}) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          contentPadding: const EdgeInsets.all(15),
+          title: Center(child: Text(patient)),
+          content: Container(
+            height: 200,
+            width: 700,
+            color: Colors.grey,
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 5,
+                childAspectRatio: 1,
+                mainAxisExtent: 40,
+              ),
+              itemCount: 23, //list.length,
+              itemBuilder: (BuildContext context, int index) {
+                return Container(
+                  alignment: Alignment.centerLeft,
+                  color: Colors.white,
+                  margin: const EdgeInsets.all(0.25),
+                  padding: const EdgeInsets.only(left: 10),
+                  child: Text(
+                    (index + 1).toString() + '. ' + _answers[index].toString(),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  childhoodDetails({patient}) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          contentPadding: const EdgeInsets.all(15),
+          title: Center(child: Text(patient)),
+          content: Column(
+            children: [
+              Container(
+                height: 40,
+                width: 1000,
+                color: Colors.grey,
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 15,
+                    childAspectRatio: 1,
+                    mainAxisExtent: 40,
+                  ),
+                  itemCount: 15, //list.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    return Container(
+                      alignment: Alignment.center,
+                      color: Colors.white,
+                      margin: const EdgeInsets.all(0.25),
+                      child: Text(
+                        _answers[index].toString(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              SizedBox(
+                height: 20,
+                width: 1000,
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 15,
+                    childAspectRatio: 1,
+                    mainAxisExtent: 20,
+                  ),
+                  itemCount: 15, //list.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    return Container(
+                      alignment: Alignment.center,
+                      color: Colors.white,
+                      margin: const EdgeInsets.all(0.25),
+                      padding: const EdgeInsets.only(left: 10),
+                      child: Text(
+                        (index + 1).toString(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

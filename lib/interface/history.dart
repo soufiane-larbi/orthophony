@@ -228,14 +228,16 @@ class _HistoryState extends State<History> {
                                               flex: 3,
                                               child: InkWell(
                                                 onTap: () {
-                                                  if (((snapshot.data) as List<dynamic>)[index]['category'].contains('CHAT')) {
-                                                    mChatDetails(
-                                                      patient: ((snapshot.data) as List<dynamic>)[index]['name'] + ' ' + ((snapshot.data) as List<dynamic>)[index]['prename'],
-                                                    );
-                                                  } else {
-                                                    childhoodDetails(
-                                                      patient: ((snapshot.data) as List<dynamic>)[index]['name'] + ' ' + ((snapshot.data) as List<dynamic>)[index]['prename'],
-                                                    );
+                                                  if (index == _selectedRow) {
+                                                    if (((snapshot.data) as List<dynamic>)[_selectedRow]['category'].contains('CHAT')) {
+                                                      mChatDetails(
+                                                        patient: ((snapshot.data) as List<dynamic>)[_selectedRow]['name'] + ' ' + ((snapshot.data) as List<dynamic>)[_selectedRow]['prename'],
+                                                      );
+                                                    } else {
+                                                      childhoodDetails(
+                                                        patient: ((snapshot.data) as List<dynamic>)[_selectedRow]['name'] + ' ' + ((snapshot.data) as List<dynamic>)[_selectedRow]['prename'],
+                                                      );
+                                                    }
                                                   }
                                                 },
                                                 child: Text(
@@ -479,64 +481,100 @@ class _HistoryState extends State<History> {
   }
 
   childhoodDetails({patient}) {
+    double testResult = 0;
+    for (int i = 0; i < 15; i++) {
+      setState(() {
+        testResult += double.parse(_answers[i].toString());
+      });
+    }
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           contentPadding: const EdgeInsets.all(15),
           title: Center(child: Text(patient)),
-          content: Column(
-            children: [
-              Container(
-                height: 40,
-                width: 1000,
-                color: Colors.grey,
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 15,
-                    childAspectRatio: 1,
-                    mainAxisExtent: 40,
+          content: SizedBox(
+            width: 1000,
+            height: 150,
+            child: Column(
+              children: [
+                Container(
+                  height: 40,
+                  width: 1000,
+                  color: Colors.grey,
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 15,
+                      childAspectRatio: 1,
+                      mainAxisExtent: 40,
+                    ),
+                    itemCount: 15, //list.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      return Container(
+                        alignment: Alignment.center,
+                        color: Colors.white,
+                        margin: const EdgeInsets.all(0.25),
+                        child: Text(
+                          _answers[index].toString(),
+                        ),
+                      );
+                    },
                   ),
-                  itemCount: 15, //list.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    return Container(
-                      alignment: Alignment.center,
-                      color: Colors.white,
-                      margin: const EdgeInsets.all(0.25),
-                      child: Text(
-                        _answers[index].toString(),
-                      ),
-                    );
-                  },
                 ),
-              ),
-              SizedBox(
-                height: 20,
-                width: 1000,
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 15,
-                    childAspectRatio: 1,
-                    mainAxisExtent: 20,
+                SizedBox(
+                  height: 20,
+                  width: 1000,
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 15,
+                      childAspectRatio: 1,
+                      mainAxisExtent: 20,
+                    ),
+                    itemCount: 15, //list.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      return Container(
+                        alignment: Alignment.center,
+                        color: Colors.white,
+                        margin: const EdgeInsets.all(0.25),
+                        padding: const EdgeInsets.only(left: 10),
+                        child: Text(
+                          (index + 1).toString(),
+                        ),
+                      );
+                    },
                   ),
-                  itemCount: 15, //list.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    return Container(
-                      alignment: Alignment.center,
-                      color: Colors.white,
-                      margin: const EdgeInsets.all(0.25),
-                      padding: const EdgeInsets.only(left: 10),
-                      child: Text(
-                        (index + 1).toString(),
-                      ),
-                    );
-                  },
                 ),
-              ),
-            ],
+                const SizedBox(
+                  height: 10,
+                ),
+                Stack(
+                  children: [
+                    Container(
+                      height: 50,
+                      width: 1000,
+                      alignment: Alignment.centerLeft,
+                      color: Colors.grey[200],
+                      child: Container(
+                        height: 50,
+                        width: testResult * 1000 / 60,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.center,
+                      child: SizedBox(
+                        height: 50,
+                        child: Center(child: Text("$testResult/60")),
+                      ),
+                    )
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },
     );
+    setState(() {});
   }
 }

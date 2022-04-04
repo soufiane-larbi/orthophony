@@ -70,7 +70,6 @@ class _PatientState extends State<Patient> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[200],
-      floatingActionButton: addTest(),
       body: Stack(
         children: [
           Column(
@@ -128,6 +127,58 @@ class _PatientState extends State<Patient> {
                         return patientWidget(index);
                       },
                     ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 5),
+              SizedBox(
+                height: 50,
+                width: double.maxFinite,
+                child: Center(
+                  child: SizedBox(
+                    width: 740,
+                    child: FutureBuilder(
+                        future: getResult(
+                          query: "Select * from testCategory",
+                        ),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            return ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: (snapshot.data as List<dynamic>).length,
+                              itemBuilder: (_, index) {
+                                return InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _testId = (snapshot.data as List<dynamic>)[index]['id'];
+                                      _addTest = !_addTest;
+                                    });
+                                  },
+                                  child: Container(
+                                    height: 50,
+                                    width: 350,
+                                    margin: const EdgeInsets.symmetric(horizontal: 10),
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      color: Colors.blue,
+                                    ),
+                                    child: Text(
+                                      "${index + 1}- " + (snapshot.data as List<dynamic>)[index]['name'],
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          } else {
+                            return const Center(
+                              child: Text("Chargement"),
+                            );
+                          }
+                        }),
                   ),
                 ),
               ),

@@ -39,6 +39,7 @@ dependencies:
   url_launcher: ^6.0.18
   url_launcher_windows: ^2.0.2
   open_file: ^3.2.1
+  shared_preferences: ^2.0.13
 dev_dependencies:
   flutter_test:
     sdk: flutter

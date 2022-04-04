@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:orthophonie/helper/database.dart';
 import 'package:orthophonie/interface/history.dart';
 import 'package:orthophonie/interface/patient.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+String? userKey;
+String productKey = "Khaled|Brahimi|2022";
+late final prefs;
 void main() async {
   await initDatabase();
+  prefs = await SharedPreferences.getInstance();
+  userKey = prefs.getString('userKey') ?? "";
   runApp(const MaterialApp(home: MyApp()));
 }
 
@@ -16,10 +22,9 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final TextEditingController _activationController = TextEditingController();
   late List<Widget> _screens;
   int _selectedScreen = 0;
-
-
   @override
   void initState() {
     super.initState();
@@ -45,13 +50,62 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedScreen],
+      body: userKey == productKey ? _screens[_selectedScreen] : activation(),
+    );
+  }
+
+  Widget activation() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Center(child: Text("Entrer le code d'activation")),
+        SizedBox(
+          width: 300,
+          child: TextField(
+            controller: _activationController,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 20),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              hintText: "Code d'Activation",
+              hintStyle: TextStyle(fontSize: 20),
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            setState(() {
+              prefs.setString('userKey', _activationController.text);
+              userKey = _activationController.text;
+            });
+            if (userKey != productKey) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  backgroundColor: Colors.red,
+                  content: Text(
+                    "Le Code Est Invalide",
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              );
+            }
+          },
+          child: const Text('Valider'),
+        ),
+      ],
     );
   }
 
   Widget mainScreen() {
     return Container(
-      color: Colors.blue[100],
+      decoration: BoxDecoration(
+        color: Colors.blue.shade400,
+        image: const DecorationImage(
+          image: AssetImage('assets/home.jpeg'),
+          fit: BoxFit.cover,
+        ),
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 200),
       child: Row(
         children: [
@@ -63,25 +117,27 @@ class _MyAppState extends State<MyApp> {
                   setState(() {
                     _selectedScreen = 1;
                   });
-                }),
+                },
+                background: 'assets/patiantImg.jpeg'),
           ),
           const SizedBox(width: 30),
           Expanded(
             child: menu(
-              title: 'Historique',
-              image: 'assets/Tests.png',
-              ontap: () {
-                setState(() {
-                  _selectedScreen = 2;
-                });
-              },
-            ),
+                title: 'Historique',
+                image: 'assets/Tests.png',
+                ontap: () {
+                  setState(() {
+                    _selectedScreen = 2;
+                  });
+                },
+                background: 'assets/historyImg.jpeg'),
           ),
           const SizedBox(width: 30),
           Expanded(
             child: menu(
               title: 'Info',
               image: 'assets/About.png',
+              background: 'assets/aboutImg.jpeg',
               ontap: () {
                 showDialog(
                   context: context,
@@ -192,13 +248,17 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  Widget menu({title, image, ontap}) {
+  Widget menu({title, image, ontap, background}) {
     return InkWell(
       onTap: ontap,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
           color: Colors.white,
+          image: DecorationImage(
+            image: AssetImage('assets/$background'),
+            fit: BoxFit.cover,
+          ),
         ),
         child: Column(
           children: [
